@@ -6,7 +6,6 @@ import (
 	"friction/databases"
 	"friction/loggers"
 	"log"
-	"reflect"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -17,9 +16,9 @@ func isZap(logger *loggers.Logger) bool {
 		return false
 	}
 
-	loggerVal := *logger
+	_, ok := (*logger).(loggers.Zap)
 
-	return reflect.TypeOf(loggerVal.(loggers.Zap)).Name() == "Zap"
+	return ok
 }
 
 func syncLogger(logger *loggers.Logger) error {
