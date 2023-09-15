@@ -3,10 +3,11 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"friction/databases"
+	_ "friction/handlers"
 	"friction/loggers"
-	"log"
-	"time"
+	"net/http"
 
 	_ "github.com/lib/pq"
 )
@@ -36,6 +37,10 @@ func syncLogger(logger *loggers.Logger) error {
 	return nil
 }
 
+const (
+	SERVER_PORT = "8080"
+)
+
 func main() {
 	var logger loggers.Logger
 
@@ -44,14 +49,29 @@ func main() {
 	logger = zap
 	defer syncLogger(&logger)
 
-	logger.Info(time.Now().GoString())
-	logger.Debug(time.Now().GoString())
-
 	var databaseConfig databases.Database
 	db, err := sql.Open("postgres", databaseConfig.DBInfo())
 	defer db.Close()
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err.Error())
 	}
 
+	httpServer := http.Server{
+		Addr: fmt.Sprintf(":%s", SERVER_PORT),
+	}
+
+	errChannel := make(chan error)
+	go func() {
+		errChannel <- httpServer.ListenAndServe()
+	}()
+
+	serverWelcome := fmt.Sprintf("Server running at port %s", SERVER_PORT)
+	logger.Info(serverWelcome)
+
+	for {
+		select {
+		case err = <-errChannel:
+			logger.Fatal(err.Error())
+		}
+	}
 }

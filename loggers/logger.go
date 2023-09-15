@@ -9,10 +9,15 @@ import (
 type Logger interface {
 	Info(msg string)
 	Debug(msg string)
+	Fatal(msg string)
 }
 
 type Zap struct {
 	ZapLogger *zap.Logger
+}
+
+func (z Zap) Fatal(msg string) {
+	z.ZapLogger.Fatal(msg)
 }
 
 func (z Zap) Info(msg string) {
