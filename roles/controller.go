@@ -30,7 +30,7 @@ func (h HandlerImpl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// TODO change from http built in to go chi
+// TODO handle the uri
 func (h HandlerImpl) get(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	pathLen := len(path)

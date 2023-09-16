@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-// TODO change from http built in to go chi
+// TODO handle the uri
 func SetupHandlers(db *sql.DB, logger loggers.Logger) {
 	userHandler := users.UserHandler{DB: db, Logger: logger}
 	roleHandler := roles.NewHandler(db, logger)
