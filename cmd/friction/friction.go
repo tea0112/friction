@@ -2,39 +2,27 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
-	"friction/databases"
-	_ "friction/handlers"
+	"friction/dbs"
+	"friction/handlers"
 	"friction/loggers"
 	"net/http"
 
 	_ "github.com/lib/pq"
 )
 
-func isZap(logger *loggers.Logger) bool {
-	if logger == nil {
-		return false
-	}
-
-	_, ok := (*logger).(loggers.Zap)
+func isZap(logger loggers.Logger) bool {
+	_, ok := (logger).(*loggers.Zap)
 
 	return ok
 }
 
-func syncLogger(logger *loggers.Logger) error {
-	if logger == nil {
-		return errors.New("logger is nil")
-	}
-
+func syncLogger(logger loggers.Logger) {
 	if isZap(logger) == false {
-		return nil
+		return
 	}
-
-	zap := (*logger).(loggers.Zap)
+	zap := (logger).(*loggers.Zap)
 	zap.ZapLogger.Sync()
-
-	return nil
 }
 
 const (
@@ -46,15 +34,16 @@ func main() {
 
 	zap := loggers.Zap{}
 	zap.SetZapLogger()
-	logger = zap
-	defer syncLogger(&logger)
+	logger = &zap
+	defer syncLogger(logger)
 
-	var databaseConfig databases.Database
-	db, err := sql.Open("postgres", databaseConfig.DBInfo())
+	db, err := sql.Open("postgres", dbs.DBInfo())
 	defer db.Close()
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+
+	handlers.SetupHandlers(db, logger)
 
 	httpServer := http.Server{
 		Addr: fmt.Sprintf(":%s", SERVER_PORT),

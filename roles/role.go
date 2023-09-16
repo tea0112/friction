@@ -7,10 +7,10 @@ type User interface {
 }
 
 type Role struct {
-	id          int64
-	name        string
-	users       []User
-	permissions []permissions.Permission
+	Id          int64                    `json:"id"`
+	Name        string                   `json:"name"`
+	Users       []User                   `json:"users,omitempty"`
+	Permissions []permissions.Permission `json:"permissions,omitempty"`
 }
 
 func (Role) String() string {

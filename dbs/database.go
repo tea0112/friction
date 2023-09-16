@@ -1,6 +1,8 @@
-package databases
+package dbs
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	host     = "localhost"
@@ -10,9 +12,7 @@ const (
 	dbname   = "friction"
 )
 
-type Database struct{}
-
-func (Database) DBInfo() string {
+func DBInfo() string {
 	return fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 }
