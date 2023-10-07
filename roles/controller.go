@@ -8,55 +8,21 @@ import (
 	"friction/utils"
 	"io"
 	"net/http"
+	"strconv"
 )
 
-type HandlerImpl struct {
-	DB     *sql.DB
-	Logger loggers.Logger
-	s      Service
-}
+func getRoles(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	db := ctx.Value(utils.DBCtxKey{}).(*sql.DB)
+	logger := ctx.Value(utils.LoggerCtxKey{}).(loggers.Logger)
 
-func NewHandler(db *sql.DB, logger loggers.Logger) http.Handler {
-	s := NewService(db, logger)
-	return HandlerImpl{DB: db, Logger: logger, s: s}
-}
+	roleService := NewService(db, logger, ctx)
 
-func (h HandlerImpl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		h.get(w, r)
-	case http.MethodPost:
-		h.saveRole(w, r)
-	}
-}
-
-// TODO handle the uri
-func (h HandlerImpl) get(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-	pathLen := len(path)
-
-	rolesPath := "/roles"
-	rolesPathLen := len(rolesPath)
-
-	if path == rolesPath {
-		h.getRoles(w, r)
-	} else if pathLen > rolesPathLen {
-		roleIdPath := path[rolesPathLen:]
-		id, err := utils.GetIdFromPath(roleIdPath)
-		if err != nil {
-			responseNotFound(w, err, h.Logger)
-			return
-		}
-		h.GetRole(w, r, id)
-	}
-}
-
-func (h HandlerImpl) getRoles(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	roles, err := h.s.RetrieveAllRoles()
+	roles, err := roleService.RetrieveAllRoles()
 	if err != nil {
-		h.Logger.Error(err.Error())
+		logger.Error(err.Error())
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
@@ -66,32 +32,37 @@ func (h HandlerImpl) getRoles(w http.ResponseWriter, r *http.Request) {
 
 	err = encoder.Encode(roles)
 	if err != nil {
-		h.Logger.Error(err.Error())
+		logger.Error(err.Error())
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	_, err = w.Write(payload.Bytes())
 	if err != nil {
-		h.Logger.Error(err.Error())
+		logger.Error(err.Error())
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 }
 
-func (h HandlerImpl) saveRole(w http.ResponseWriter, r *http.Request) {
+func saveRole(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	db := ctx.Value(utils.DBCtxKey{}).(*sql.DB)
+	logger := ctx.Value(utils.LoggerCtxKey{}).(loggers.Logger)
+
+	roleService := NewService(db, logger, ctx)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	var role Role
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&role)
 	if err != io.EOF && err != nil {
-		responseNotFound(w, err, h.Logger)
+		responseNotFound(w, err, logger)
 		return
 	}
 
-	role, err = h.s.SaveRole(role)
+	role, err = roleService.SaveRole(role)
 	if err != nil {
-		responseNotFound(w, err, h.Logger)
+		responseNotFound(w, err, logger)
 		return
 	}
 
@@ -100,19 +71,34 @@ func (h HandlerImpl) saveRole(w http.ResponseWriter, r *http.Request) {
 
 	err = encoder.Encode(role)
 	if err != nil {
-		responseNotFound(w, err, h.Logger)
+		responseNotFound(w, err, logger)
 		return
 	}
 
 	w.Write(responsePayload.Bytes())
 }
 
-func (h HandlerImpl) GetRole(w http.ResponseWriter, r *http.Request, id int64) {
+func GetRole(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	params := ctx.Value(utils.DBCtxKey{}).([]string)
+	db := ctx.Value(utils.DBCtxKey{}).(*sql.DB)
+	logger := ctx.Value(utils.LoggerCtxKey{}).(loggers.Logger)
+
+	roleService := NewService(db, logger, ctx)
+
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	role, err := h.s.RetrieveRole(id)
+
+	id, err := strconv.ParseInt(params[1], 10, 64)
 	if err != nil {
-		h.Logger.Error(err.Error())
-		responseNotFound(w, err, h.Logger)
+		logger.Error(err.Error())
+		responseNotFound(w, err, logger)
+		return
+	}
+
+	role, err := roleService.RetrieveRole(id)
+	if err != nil {
+		logger.Error(err.Error())
+		responseNotFound(w, err, logger)
 		return
 	}
 
@@ -121,8 +107,8 @@ func (h HandlerImpl) GetRole(w http.ResponseWriter, r *http.Request, id int64) {
 
 	err = encoder.Encode(role)
 	if err != nil {
-		h.Logger.Error(err.Error())
-		responseNotFound(w, err, h.Logger)
+		logger.Error(err.Error())
+		responseNotFound(w, err, logger)
 		return
 	}
 

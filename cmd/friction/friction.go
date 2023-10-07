@@ -43,10 +43,11 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 
-	handlers.SetupHandlers(db, logger)
+	mux := handlers.SetupHandlers(db, logger)
 
 	httpServer := http.Server{
-		Addr: fmt.Sprintf(":%s", SERVER_PORT),
+		Addr:    fmt.Sprintf(":%s", SERVER_PORT),
+		Handler: mux,
 	}
 
 	errChannel := make(chan error)

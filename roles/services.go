@@ -1,6 +1,7 @@
 package roles
 
 import (
+	"context"
 	"database/sql"
 	"friction/loggers"
 )
@@ -15,11 +16,12 @@ type ServiceImpl struct {
 	DB     *sql.DB
 	Logger loggers.Logger
 	R      Repository
+	ctx    context.Context
 }
 
-func NewService(db *sql.DB, logger loggers.Logger) Service {
-	r := NewRepository(db, logger)
-	return ServiceImpl{DB: db, Logger: logger, R: r}
+func NewService(db *sql.DB, logger loggers.Logger, ctx context.Context) Service {
+	r := NewRepository(db, logger, ctx)
+	return ServiceImpl{DB: db, Logger: logger, R: r, ctx: ctx}
 }
 
 func (s ServiceImpl) RetrieveAllRoles() ([]Role, error) {

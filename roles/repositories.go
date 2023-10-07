@@ -1,6 +1,7 @@
 package roles
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"friction/loggers"
@@ -15,10 +16,11 @@ type Repository interface {
 type RepositoryImpl struct {
 	DB     *sql.DB
 	Logger loggers.Logger
+	ctx    context.Context
 }
 
-func NewRepository(db *sql.DB, logger loggers.Logger) Repository {
-	return RepositoryImpl{DB: db, Logger: logger}
+func NewRepository(db *sql.DB, logger loggers.Logger, ctx context.Context) Repository {
+	return RepositoryImpl{DB: db, Logger: logger, ctx: ctx}
 }
 
 func (r RepositoryImpl) FindAllRoles() ([]Role, error) {
@@ -63,13 +65,12 @@ func (r RepositoryImpl) PersistRole(role Role) (Role, error) {
 	return role, nil
 }
 
-
 func (r RepositoryImpl) FindById(id int64) (Role, error) {
 	q := `
 select id, name from roles where id = $1
 `
-	row := r.DB.QueryRow(q, id)	
-	
+	row := r.DB.QueryRow(q, id)
+
 	var role Role
 	if err := row.Scan(&role); err != nil {
 		return role, err
