@@ -24,6 +24,9 @@ func SetupHandlers(db *sql.DB, logger loggers.Logger, routes []Route) http.Handl
 
 		for _, route := range routes {
 			if params := matchPath(route.PathRegex, path); params != nil {
+				if r.Method != route.Method {
+					break
+				}
 				notFound = false
 
 				ctx := r.Context()
