@@ -3,9 +3,8 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"friction/ctxkeys"
 	"friction/loggers"
-	"friction/roles"
-	"friction/utils"
 	"net/http"
 	"regexp"
 )
@@ -16,11 +15,7 @@ type Route struct {
 	Handler   http.HandlerFunc
 }
 
-var routes = []Route{
-	Route{http.MethodGet, "/api/roles", roles.GetRole},
-}
-
-func SetupHandlers(db *sql.DB, logger loggers.Logger) http.Handler {
+func SetupHandlers(db *sql.DB, logger loggers.Logger, routes []Route) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -32,9 +27,7 @@ func SetupHandlers(db *sql.DB, logger loggers.Logger) http.Handler {
 				notFound = false
 
 				ctx := r.Context()
-				ctx = context.WithValue(ctx, utils.ParamsCtxKey{}, params)
-				ctx = context.WithValue(ctx, utils.DBCtxKey{}, db)
-				ctx = context.WithValue(ctx, utils.LoggerCtxKey{}, logger)
+				ctx = context.WithValue(ctx, ctxkeys.ParamsCtxKey{}, params)
 
 				r = r.WithContext(ctx)
 

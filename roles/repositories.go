@@ -8,22 +8,21 @@ import (
 )
 
 type Repository interface {
-	FindAllRoles() ([]Role, error)
-	PersistRole(Role) (Role, error)
-	FindById(int64) (Role, error)
+	FindAllRoles(context.Context) ([]Role, error)
+	PersistRole(context.Context, Role) (Role, error)
+	FindById(context.Context, int64) (Role, error)
 }
 
 type RepositoryImpl struct {
 	DB     *sql.DB
 	Logger loggers.Logger
-	ctx    context.Context
 }
 
-func NewRepository(db *sql.DB, logger loggers.Logger, ctx context.Context) Repository {
-	return RepositoryImpl{DB: db, Logger: logger, ctx: ctx}
+func NewRepository(db *sql.DB, logger loggers.Logger) Repository {
+	return RepositoryImpl{DB: db, Logger: logger}
 }
 
-func (r RepositoryImpl) FindAllRoles() ([]Role, error) {
+func (r RepositoryImpl) FindAllRoles(ctx context.Context) ([]Role, error) {
 	roles := make([]Role, 0)
 
 	q := `
@@ -48,7 +47,7 @@ select id, name from friction.roles
 	return roles, nil
 }
 
-func (r RepositoryImpl) PersistRole(role Role) (Role, error) {
+func (r RepositoryImpl) PersistRole(ctx context.Context, role Role) (Role, error) {
 	result, err := r.DB.Exec("insert into friction.roles(name) values($1)", role.Name)
 	if err != nil {
 		return role, err
@@ -65,7 +64,7 @@ func (r RepositoryImpl) PersistRole(role Role) (Role, error) {
 	return role, nil
 }
 
-func (r RepositoryImpl) FindById(id int64) (Role, error) {
+func (r RepositoryImpl) FindById(ctx context.Context, id int64) (Role, error) {
 	q := `
 select id, name from roles where id = $1
 `

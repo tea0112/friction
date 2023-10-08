@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"database/sql"
+	"friction/loggers"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -28,5 +32,27 @@ func TestMatchPathSuccess(t *testing.T) {
 		if got != want[i] {
 			t.Errorf("got %q, want %q", got, want)
 		}
+	}
+}
+
+func TestSetupHandlers(t *testing.T) {
+	logger := loggers.NewLogger()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/roles/5312abc", nil)
+	w := httptest.NewRecorder()
+
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	var routes = []Route{
+		{Method: http.MethodGet, PathRegex: "/api/roles/([^/]+)", Handler: h},
+	}
+
+	mux := SetupHandlers(&sql.DB{}, logger, routes)
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("want %q, got %q", http.StatusOK, w.Code)
 	}
 }

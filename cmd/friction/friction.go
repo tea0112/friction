@@ -6,36 +6,29 @@ import (
 	"friction/dbs"
 	"friction/handlers"
 	"friction/loggers"
+	"friction/roles"
 	"net/http"
 
 	_ "github.com/lib/pq"
 )
 
-func isZap(logger loggers.Logger) bool {
-	_, ok := (logger).(*loggers.Zap)
-
-	return ok
-}
-
-func syncLogger(logger loggers.Logger) {
-	if isZap(logger) == false {
-		return
-	}
-	zap := (logger).(*loggers.Zap)
-	zap.ZapLogger.Sync()
-}
-
 const (
 	SERVER_PORT = "8080"
 )
 
-func main() {
-	var logger loggers.Logger
+func initMux(db *sql.DB, logger loggers.Logger) http.Handler {
+	rolesController := roles.NewController(db, logger)
 
-	zap := loggers.Zap{}
-	zap.SetZapLogger()
-	logger = &zap
-	defer syncLogger(logger)
+	var routes = []handlers.Route{
+		{Method: http.MethodGet, PathRegex: "/api/roles", Handler: rolesController.GetRoles},
+	}
+
+	return handlers.SetupHandlers(db, logger, routes)
+}
+
+func main() {
+	logger := loggers.NewLogger()
+	defer loggers.SyncLogger(logger)
 
 	db, err := sql.Open("postgres", dbs.DBInfo())
 	defer db.Close()
@@ -43,11 +36,9 @@ func main() {
 		logger.Fatal(err.Error())
 	}
 
-	mux := handlers.SetupHandlers(db, logger)
-
 	httpServer := http.Server{
 		Addr:    fmt.Sprintf(":%s", SERVER_PORT),
-		Handler: mux,
+		Handler: initMux(db, logger),
 	}
 
 	errChannel := make(chan error)

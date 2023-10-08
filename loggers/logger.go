@@ -68,3 +68,23 @@ func (z *Zap) SetZapLogger() {
 
 	z.ZapLogger = zap.Must(configBuild, err)
 }
+
+func NewLogger() Logger {
+	zap := Zap{}
+	zap.SetZapLogger()
+	return &zap
+}
+
+func isZap(logger Logger) bool {
+	_, ok := (logger).(*Zap)
+
+	return ok
+}
+
+func SyncLogger(logger Logger) {
+	if isZap(logger) == false {
+		return
+	}
+	zap := (logger).(*Zap)
+	zap.ZapLogger.Sync()
+}
