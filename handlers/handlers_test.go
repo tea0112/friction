@@ -11,16 +11,20 @@ import (
 func TestMatchPathSuccess(t *testing.T) {
 	usersRg := "/api/users/([^/]+)"
 
-	usersPaths := []string{}
-	usersPaths = append(usersPaths, "/api/users/abc")
-	usersPaths = append(usersPaths, "/api/users/1a")
-	usersPaths = append(usersPaths, "/api/users/a1")
-	usersPaths = append(usersPaths, "/api/users/11")
+	suite := []struct {
+		path string
+		want string
+	}{
+		{"/api/users/abc", "abc"},
+		{"/api/users/1a", "1a"},
+		{"/api/users/a1", "a1"},
+		{"/api/users/11", "11"},
+	}
 
 	want := []string{"abc", "1a", "a1", "11"}
 
-	for i, v := range usersPaths {
-		strSubmatchs := matchPath(usersRg, v)
+	for i, v := range suite {
+		strSubmatchs := matchPath(usersRg, v.path)
 		if strSubmatchs == nil {
 			t.Fatal("path matches are nil")
 		}
@@ -31,6 +35,23 @@ func TestMatchPathSuccess(t *testing.T) {
 		got := strSubmatchs[1]
 		if got != want[i] {
 			t.Errorf("got %q, want %q", got, want)
+		}
+	}
+}
+
+func TestMatchPathPagination(t *testing.T) {
+	path := "/api/roles?limit=3&page=2"
+	want := []string{"/api/roles?limit=3&page=2", "3", "2"}
+	rg := `\/api\/roles\?limit=([0-9]+)&page=([0-9]+)`
+
+	got := matchPath(rg, path)
+	if len(got) != 3 {
+		t.Fatal("failed")
+	}
+
+	for idx, v := range want {
+		if v != got[idx] {
+			t.Errorf("want %q, got %q", v, got[idx])
 		}
 	}
 }
