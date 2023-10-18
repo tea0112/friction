@@ -6,7 +6,6 @@ import (
 	"friction/dbs"
 	"friction/handlers"
 	"friction/loggers"
-	"friction/roles"
 	"net/http"
 
 	_ "github.com/lib/pq"
@@ -15,16 +14,6 @@ import (
 const (
 	SERVER_PORT = "8080"
 )
-
-func initMux(db *sql.DB, logger loggers.Logger) http.Handler {
-	rolesController := roles.NewController(db, logger)
-
-	var routes = []handlers.Route{
-		{Method: http.MethodGet, PathRegex: "/api/roles", Handler: rolesController.GetRoles},
-	}
-
-	return handlers.SetupHandlers(db, logger, routes)
-}
 
 func main() {
 	logger := loggers.NewLogger()
@@ -35,10 +24,13 @@ func main() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
+	if err := db.Ping(); err != nil {
+		logger.Fatal(err.Error())
+	}
 
 	httpServer := http.Server{
 		Addr:    fmt.Sprintf(":%s", SERVER_PORT),
-		Handler: initMux(db, logger),
+		Handler: handlers.InitMux(db, logger),
 	}
 
 	errChannel := make(chan error)
