@@ -10,3 +10,19 @@ services:
       POSTGRES_DB: friction
     ports:
       - "5432:5432"
+    networks:
+      - friction_network
+  friction_pgadmin:
+    container_name: friction_pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - friction_network
+
+networks:
+  friction_network:
+    driver: bridge
